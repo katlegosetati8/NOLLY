@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Keep YOUR existing admin id(s) here (the same ones already in your current rules).
+    function isAdmin() { return request.auth != null && request.auth.uid in ['PASTE_YOUR_ADMIN_UID']; }
+
+    match /settings/{doc} { allow read: if true; allow write: if isAdmin(); }
+    match /gallery/{doc}  { allow read: if true; allow write: if isAdmin(); }
+    match /users/{uid}    { allow read, write: if request.auth != null && request.auth.uid == uid; allow read: if isAdmin(); }
+    match /orderLogos/{id} {
+      allow read: if isAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+    match /expenses/{doc} { allow read, write: if isAdmin(); }
+    match /orders/{id} {
+      allow read: if isAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.paid == 0 && request.resource.data.status == 'New';
+      allow update, delete: if isAdmin();
+    }
+  }
+}
